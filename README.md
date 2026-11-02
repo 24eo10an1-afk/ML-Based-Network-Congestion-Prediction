@@ -21,6 +21,7 @@ It can result in:
 This project explores a machine-learning-based approach to predict congestion and redirect traffic through an alternative route.
 
 ## 3. System Architecture
+![Project Architecture](docs/architecture.png)
 
 The simulated network consists of:
 
