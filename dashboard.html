@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ML-Based Early Congestion Prediction Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+    background:linear-gradient(135deg,#eef4fb,#f7faff);
+    color:#172033;
+}
+.header{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg,#071a33 0%,#103b6b 55%,#1765a8 100%);
+    color:white;
+    padding:34px 42px;
+    border-bottom:1px solid #3d82c4;
+}
+.header:after{
+    content:"";
+    position:absolute;
+    width:420px;
+    height:420px;
+    right:-150px;
+    top:-230px;
+    border-radius:50%;
+    background:rgba(73,169,255,.12);
+}
+.header h1{
+    margin:0 0 9px;
+    font-size:31px;
+    font-weight:750;
+    letter-spacing:.2px;
+    position:relative;
+    z-index:1;
+}
+.header p{
+    margin:0;
+    color:#d8eaff;
+    font-size:14px;
+    position:relative;
+    z-index:1;
+}
+.system-status-panel{
+    margin-top:0!important;
+}
+.status-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+}
+.system-status-card{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    padding:16px;
+    border:1px solid #dfe8f2;
+    border-radius:12px;
+    background:linear-gradient(135deg,#fbfdff,#f4f8fc);
+}
+.system-status-icon{
+    width:43px;
+    height:43px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:11px;
+    background:#eaf4ff;
+    border:1px solid #d5e7f8;
+    font-size:20px;
+}
+.system-status-card b{
+    display:block;
+    color:#183e65;
+    font-size:13px;
+    margin-bottom:5px;
+}
+.system-status-card small{
+    display:block;
+    color:#7b899b;
+    font-size:10px;
+    margin-top:4px;
+}
+.online-dot{
+    color:#159447;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.4px;
+}
+.route-grid{
+    display:grid;
+    grid-template-columns:1fr 120px 1fr;
+    gap:12px;
+    align-items:center;
+}
+.route-card{
+    border:1px solid #dce6f2;
+    border-radius:14px;
+    padding:17px;
+    background:#fbfdff;
+}
+.path-a{
+    border-left:4px solid #e45b5b;
+}
+.path-b{
+    border-left:4px solid #22a566;
+}
+.route-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+}
+.route-label{
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:#6d7e91;
+}
+.route-card h3{
+    margin:4px 0 0;
+    color:#183e65;
+    font-size:17px;
+}
+.route-badge{
+    padding:5px 8px;
+    border-radius:20px;
+    background:#eef4fa;
+    color:#47637d;
+    font-size:9px;
+    font-weight:800;
+}
+.path-a .route-badge{
+    background:#fff0f0;
+    color:#c24747;
+}
+.path-b .route-badge{
+    background:#ecfaf2;
+    color:#16834a;
+}
+.route-flow{
+    padding-top:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    margin:15px 0;
+    color:#45627d;
+    font-size:10px;
+    font-weight:700;
+    flex-wrap:wrap;
+}
+.route-flow b{
+    color:#8ba0b5;
+}
+.route-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+}
+.route-stats div{
+    background:#f3f7fb;
+    border-radius:8px;
+    padding:8px;
+}
+.route-stats small{
+    display:block;
+    color:#7d8da0;
+    font-size:9px;
+}
+.route-stats strong{
+    display:block;
+    margin-top:3px;
+    color:#234e76;
+    font-size:11px;
+}
+.route-switch{
+    text-align:center;
+}
+.switch-line{
+    height:1px;
+    background:#d4dfeb;
+    margin:0 8px;
+    position:relative;
+    top:-3px;
+}
+.switch-icon{
+    width:43px;
+    height:43px;
+    margin:10px auto 7px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#edf4ff;
+    border:2px solid #5b8fc4;
+    color:#24639b;
+    font-weight:800;
+    font-size:11px;
+}
+.switch-text{
+    color:#315b7f;
+    font-weight:800;
+    font-size:10px;
+}
+.switch-text span{
+    color:#8796a7;
+    font-weight:500;
+    font-size:9px;
+}
+@media(max-width:900px){
+    .route-grid{
+        grid-template-columns:1fr;
+    }
+    .route-switch{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+    }
+    .switch-line{
+        width:80px;
+    }
+    .switch-text{
+        white-space:nowrap;
+    }
+}
+.ml-engine{
+    display:grid;
+    grid-template-columns:1.2fr 35px 1fr 35px 1.1fr 35px 1.1fr;
+    gap:10px;
+    align-items:stretch;
+}
+.ml-input-box,
+.model-box,
+.prediction-box,
+.action-box{
+    border:1px solid #dce6f2;
+    border-radius:14px;
+    padding:17px;
+    min-height:190px;
+}
+.ml-input-box{
+    background:#f8fbff;
+    border-left:4px solid #4c91c9;
+}
+.model-box{
+    background:#f7f5ff;
+    border-left:4px solid #7566d9;
+    text-align:center;
+}
+.prediction-box{
+    background:#fff9f4;
+    border-left:4px solid #e28a43;
+}
+.action-box{
+    background:#f3fbf7;
+    border-left:4px solid #2aa66b;
+    text-align:center;
+}
+.engine-label{
+    color:#7a899a;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1.2px;
+}
+.ml-engine h3{
+    margin:7px 0 11px;
+    color:#1b456c;
+    font-size:15px;
+}
+.metric-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+}
+.metric-list span{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    color:#718398;
+    font-size:10px;
+}
+.metric-list b{
+    color:#28577d;
+}
+.engine-arrow{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#7b9ab5;
+    font-size:22px;
+    font-weight:700;
+}
+.engine-icon{
+    width:42px;
+    height:42px;
+    margin:5px auto 8px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eae7ff;
+    font-size:21px;
+}
+.model-box p,
+.prediction-box p,
+.action-box p{
+    color:#7b899b;
+    font-size:10px;
+    margin:5px 0 13px;
+}
+.model-status,
+.action-status{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:20px;
+    font-size:9px;
+    font-weight:800;
+}
+.model-status{
+    background:#ebe8ff;
+    color:#5d50b8;
+}
+.prediction-state{
+    display:inline-block;
+    margin-top:15px;
+    padding:8px 13px;
+    border-radius:8px;
+    background:#fff0e4;
+    color:#c56722;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.6px;
+}
+.confidence-bar{
+    height:6px;
+    margin-top:15px;
+    background:#eee5dc;
+    border-radius:10px;
+    overflow:hidden;
+}
+.confidence-bar span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,#e38a43,#d66b35);
+    border-radius:10px;
+}
+.confidence-text{
+    display:flex;
+    justify-content:space-between;
+    margin-top:7px;
+    color:#8b796b;
+    font-size:9px;
+}
+.confidence-text b{
+    color:#bd6427;
+}
+.action-icon{
+    font-size:27px;
+    color:#23965f;
+    margin:8px 0 2px;
+}
+.action-status{
+    background:#e6f8ef;
+    color:#16834a;
+}
+@media(max-width:1050px){
+    .ml-engine{
+        grid-template-columns:1fr;
+    }
+    .engine-arrow{
+        transform:rotate(90deg);
+        height:20px;
+    }
+}
+.timeline{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    padding:20px 5px 8px;
+}
+.timeline:before{
+    content:"";
+    position:absolute;
+    left:4%;
+    right:4%;
+    top:40px;
+    height:3px;
+    background:#dce6f1;
+    border-radius:10px;
+}
+.timeline-item{
+    position:relative;
+    z-index:1;
+    width:16%;
+    text-align:center;
+}
+.timeline-dot{
+    width:42px;
+    height:42px;
+    margin:0 auto 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:#edf4fa;
+    border:3px solid white;
+    box-shadow:0 2px 8px rgba(30,70,110,.14);
+    color:#52718e;
+    font-size:14px;
+    font-weight:800;
+}
+.timeline-item.active .timeline-dot{
+    background:#e9e5ff;
+    color:#5c4fc1;
+    box-shadow:0 0 0 4px rgba(108,99,255,.12);
+}
+.timeline-item.success .timeline-dot{
+    background:#e5f8ee;
+    color:#16834a;
+    box-shadow:0 0 0 4px rgba(42,166,107,.12);
+}
+.timeline-content b{
+    display:block;
+    color:#244d70;
+    font-size:11px;
+}
+.timeline-content span{
+    display:block;
+    margin-top:4px;
+    color:#2671ac;
+    font-size:10px;
+    font-weight:800;
+}
+.timeline-content small{
+    display:block;
+    margin-top:6px;
+    color:#7d8b9b;
+    font-size:9px;
+    line-height:1.4;
+}
+@media(max-width:800px){
+    .timeline{
+        flex-direction:column;
+        gap:15px;
+        padding-left:10px;
+    }
+    .timeline:before{
+        left:29px;
+        right:auto;
+        top:20px;
+        bottom:20px;
+        width:3px;
+        height:auto;
+    }
+    .timeline-item{
+        width:100%;
+        display:flex;
+        align-items:center;
+        text-align:left;
+        gap:13px;
+    }
+    .timeline-dot{
+        margin:0;
+        flex-shrink:0;
+    }
+}
+.comparison-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+}
+.comparison-card{
+    background:#fbfdff;
+    border:1px solid #dce6f2;
+    border-radius:14px;
+    padding:17px;
+}
+.highlight-comparison{
+    border-top:3px solid #267fd0;
+}
+.comparison-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    color:#234d70;
+    font-size:13px;
+    font-weight:750;
+}
+.gain-badge{
+    padding:5px 7px;
+    border-radius:7px;
+    background:#e7f1ff;
+    color:#1768a8;
+    font-size:9px;
+    font-weight:800;
+}
+.gain-badge.reduction{
+    background:#e8f8ef;
+    color:#16834a;
+}
+.compare-values{
+    display:grid;
+    grid-template-columns:1fr 25px 1fr;
+    align-items:center;
+    gap:5px;
+    margin-top:22px;
+}
+.compare-values small{
+    display:block;
+    color:#8795a5;
+    font-size:8px;
+    font-weight:700;
+}
+.compare-values strong{
+    display:block;
+    margin-top:5px;
+    color:#425d76;
+    font-size:15px;
+}
+.after-value strong{
+    color:#16834a;
+}
+.compare-arrow{
+    color:#8ba1b5;
+    font-size:17px;
+    text-align:center;
+}
+.compare-bar{
+    height:5px;
+    margin-top:17px;
+    background:#e7eef5;
+    border-radius:10px;
+    overflow:hidden;
+}
+.compare-bar span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,#267fd0,#6c63ff);
+    border-radius:10px;
+}
+.delay-bar span,
+.loss-bar span{
+    background:linear-gradient(90deg,#2aa66b,#55c98b);
+}
+.comparison-card p{
+    margin:8px 0 0;
+    color:#8492a2;
+    font-size:9px;
+}
+@media(max-width:1050px){
+    .comparison-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+@media(max-width:600px){
+    .comparison-grid{
+        grid-template-columns:1fr;
+    }
+}
+.simulation-status-panel{
+    margin-top:0!important;
+}
+.execution-status{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+}
+.execution-step{
+    min-width:105px;
+    text-align:center;
+    padding:12px 8px;
+    border:1px solid #dce6f2;
+    border-radius:12px;
+    background:#f8fbfe;
+    opacity:.55;
+    transition:.25s;
+}
+.execution-step.active{
+    opacity:1;
+    background:#edf6ff;
+    border-color:#4b9bdd;
+    box-shadow:0 0 0 4px rgba(38,127,208,.10),
+               0 0 22px rgba(38,127,208,.22);
+    animation:executionPulse 1.4s ease-in-out infinite;
+    transform:translateY(-2px);
+}
+
+@keyframes executionPulse{
+    0%,100%{
+        box-shadow:0 0 0 3px rgba(38,127,208,.08),
+                   0 0 12px rgba(38,127,208,.12);
+    }
+    50%{
+        box-shadow:0 0 0 6px rgba(38,127,208,.16),
+                   0 0 26px rgba(38,127,208,.30);
+    }
+}
+.execution-step.done{
+    opacity:1;
+    background:#ecfaf2;
+    border-color:#8ed2ae;
+}
+.execution-icon{
+    width:32px;
+    height:32px;
+    margin:0 auto 6px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#e7eef5;
+    color:#58738b;
+    font-size:13px;
+}
+.execution-step.active .execution-icon{
+    background:#dceeff;
+    color:#1768a8;
+}
+.execution-step.done .execution-icon{
+    background:#d9f4e5;
+    color:#16834a;
+}
+.execution-step span{
+    display:block;
+    color:#315b7f;
+    font-size:9px;
+    font-weight:850;
+    letter-spacing:.5px;
+}
+.execution-step small{
+    display:block;
+    margin-top:3px;
+    color:#8795a5;
+    font-size:8px;
+}
+.execution-connector{
+    width:35px;
+    height:2px;
+    background:#d9e3ed;
+}
+.simulation-status-text{
+    text-align:center;
+    margin-top:14px;
+    color:#60758a;
+    font-size:11px;
+    font-weight:650;
+}
+@media(max-width:800px){
+    .execution-status{
+        flex-wrap:wrap;
+    }
+    .execution-connector{
+        width:25px;
+    }
+}
+@media(max-width:600px){
+    .execution-connector{
+        display:none;
+    }
+    .execution-step{
+        min-width:90px;
+    }
+}
+.event-log{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:260px;
+    overflow-y:auto;
+}
+.event-row{
+    display:grid;
+    grid-template-columns:70px 14px 1fr auto;
+    align-items:center;
+    gap:10px;
+    padding:11px 13px;
+    border:1px solid #e1e8f0;
+    border-radius:10px;
+    background:#f9fbfd;
+}
+.event-time{
+    color:#8493a4;
+    font-size:9px;
+    font-weight:750;
+}
+.event-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#2b8bd3;
+    box-shadow:0 0 0 3px #e5f2fc;
+}
+.event-message b{
+    display:block;
+    color:#294f70;
+    font-size:11px;
+}
+.event-message span{
+    display:block;
+    margin-top:3px;
+    color:#8492a2;
+    font-size:9px;
+}
+.event-tag{
+    padding:5px 8px;
+    border-radius:7px;
+    font-size:8px;
+    font-weight:850;
+}
+.event-tag.info{
+    background:#e8f3ff;
+    color:#1768a8;
+}
+.event-tag.warning{
+    background:#fff2df;
+    color:#c56a20;
+}
+.event-tag.success{
+    background:#e7f8ee;
+    color:#16834a;
+}
+.event-tag.danger{
+    background:#ffeded;
+    color:#c44747;
+}
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:18px;
+    padding:25px 35px;
+}
+.card{
+    position:relative;
+    overflow:hidden;
+    background:white;
+    border:1px solid #dce6f2;
+    border-radius:16px;
+    padding:22px;
+    box-shadow:0 7px 24px rgba(19,55,91,.09);
+}
+.card:before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:4px;
+    background:linear-gradient(90deg,#1479d1,#6c63ff);
+}
+.card h3{
+    margin:0;
+    color:#66758a;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.8px;
+}
+.card .value,.value{
+    font-size:30px;
+    font-weight:750;
+    margin-top:9px;
+    color:#123e70;
+}
+.card small{
+    display:block;
+    margin-top:5px;
+    color:#7b899b;
+    font-size:12px;
+}
+.kpi-card{
+    min-height:155px;
+}
+.kpi-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+}
+.kpi-icon{
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:#edf5ff;
+    border:1px solid #d8e8f8;
+    font-size:21px;
+}
+.kpi-line{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:14px;
+    color:#7a8798;
+    font-size:11px;
+}
+.kpi-line span:last-child{
+    color:#285f91;
+    font-weight:700;
+}
+.kpi-bar{
+    height:5px;
+    margin-top:10px;
+    background:#e7eef6;
+    border-radius:10px;
+    overflow:hidden;
+}
+.kpi-bar span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,#1976c9,#6c63ff);
+    border-radius:10px;
+}
+.status-pill{
+    display:inline-block;
+    margin-top:11px;
+    padding:5px 9px;
+    border-radius:20px;
+    background:#ecfbf2;
+    color:#16834a;
+    font-size:10px;
+    font-weight:700;
+}
+.panel{
+    background:rgba(255,255,255,.96);
+    border:1px solid #dce6f2;
+    border-radius:16px;
+    padding:21px;
+    box-shadow:0 7px 24px rgba(19,55,91,.07);
+    margin:0 35px 25px!important;
+}
+.panel h2{
+    font-size:18px;
+    margin:0 0 16px;
+    color:#123e70;
+    font-weight:700;
+    border-left:4px solid #2585d6;
+    padding-left:11px;
+}
+.panel img{
+    width:100%;
+    height:360px;
+    object-fit:contain;
+    border-radius:10px;
+}
+input{
+    border:1px solid #c8d5e5;
+    border-radius:9px;
+    background:white;
+    color:#172033;
+    outline:none;
+    font-size:15px;
+}
+input:focus{
+    border-color:#2687d9;
+    box-shadow:0 0 0 3px rgba(38,135,217,.13);
+}
+button{
+    border:0;
+    border-radius:9px;
+    padding:12px 20px;
+    background:linear-gradient(135deg,#126dcc,#208ce5);
+    color:white;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 5px 14px rgba(18,109,204,.25);
+    transition:.2s;
+}
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 18px rgba(18,109,204,.32);
+}
+button:disabled{
+    opacity:.65;
+    cursor:wait;
+    transform:none;
+}
+table{
+    font-size:13px;
+    overflow:hidden;
+    border-radius:10px;
+}
+th{
+    background:linear-gradient(135deg,#123e70,#1b5d98);
+    color:white;
+    font-weight:650;
+    padding:11px!important;
+}
+td{
+    padding:9px!important;
+    border-color:#e1e8f0!important;
+}
+tr:nth-child(even) td{
+    background:#f7faff;
+}
+.footer{
+    text-align:center;
+    padding:28px;
+    color:#718096;
+    font-size:13px;
+}
+@media(max-width:1000px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:650px){
+    .header{padding:26px 20px}
+    .header h1{font-size:23px}
+    .cards{grid-template-columns:1fr;padding:20px}
+    .panel{margin-left:20px!important;margin-right:20px!important}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:25px;flex-wrap:wrap;position:relative;z-index:2">
+<div>
+<div style="font-size:13px;color:#7fc8ff;font-weight:700;letter-spacing:1.5px;margin-bottom:7px">NETWORK INTELLIGENCE SYSTEM</div>
+<h1>ML-Based Early Congestion Prediction &amp; Proactive Rerouting</h1>
+<p>NS-3 Multi-Path Network Simulation &nbsp;|&nbsp; Random Forest Early Prediction</p>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:11px 16px;min-width:145px">
+<div style="color:#6dff9a;font-weight:700;font-size:12px">● &nbsp;LIVE SYSTEM</div>
+<div style="font-size:11px;color:#d9e9fa;margin-top:4px">NS-3 Connected</div>
+</div>
+<div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:11px 16px;text-align:center;min-width:105px">
+<div style="font-size:20px">⚙</div><b style="font-size:11px">NS-3</b><br><small>Simulation</small>
+</div>
+<div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:11px 16px;text-align:center;min-width:105px">
+<div style="font-size:20px">🧠</div><b style="font-size:11px">ML</b><br><small>Prediction</small>
+</div>
+<div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:11px 16px;text-align:center;min-width:105px">
+<div style="font-size:20px">↗</div><b style="font-size:11px">Adaptive</b><br><small>Rerouting</small>
+</div>
+</div>
+</div>
+</div>
+
+<div class="panel system-status-panel">
+<h2>Live System Status</h2>
+
+<div class="status-grid">
+
+<div class="system-status-card">
+<div class="system-status-icon">⚙</div>
+<div>
+<b>NS-3 Simulation</b>
+<span class="online-dot">● ONLINE</span>
+<small>Multi-path network active</small>
+</div>
+</div>
+
+<div class="system-status-card">
+<div class="system-status-icon">🧠</div>
+<div>
+<b>Random Forest ML</b>
+<span class="online-dot">● READY</span>
+<small>Early prediction model loaded</small>
+</div>
+</div>
+
+<div class="system-status-card">
+<div class="system-status-icon">🐍</div>
+<div>
+<b>Python Inference</b>
+<span class="online-dot">● CONNECTED</span>
+<small>Prediction service available</small>
+</div>
+</div>
+
+<div class="system-status-card">
+<div class="system-status-icon">↗</div>
+<div>
+<b>Proactive Routing</b>
+<span class="online-dot">● ENABLED</span>
+<small>Automatic Path A → Path B</small>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+<h2>Adaptive Multi-Path Routing</h2>
+
+<div class="route-grid">
+
+<div class="route-card path-a">
+<div class="route-head">
+<div>
+<span class="route-label">PATH A</span>
+<h3>Primary Route</h3>
+</div>
+<span class="route-badge">BOTTLENECK</span>
+</div>
+
+<div class="route-flow">
+<span>Source</span>
+<b>→</b>
+<span>R1</span>
+<b>→</b>
+<span>R2</span>
+<b>→</b>
+<span>R4</span>
+<b>→</b>
+<span>Destination</span>
+</div>
+
+<div class="route-stats">
+<div><small>Capacity</small><strong>2 Mbps</strong></div>
+<div><small>Delay</small><strong>10 ms</strong></div>
+<div><small>Role</small><strong>Primary</strong></div>
+</div>
+</div>
+
+<div class="route-switch">
+<div class="switch-line"></div>
+<div class="switch-icon">ML</div>
+<div class="switch-text">6 sec<br><span>Decision Point</span></div>
+<div class="switch-line"></div>
+</div>
+
+<div class="route-card path-b">
+<div class="route-head">
+<div>
+<span class="route-label">PATH B</span>
+<h3>Backup Route</h3>
+</div>
+<span class="route-badge">8 Mbps</span>
+</div>
+
+<div class="route-flow">
+<span>Source</span>
+<b>→</b>
+<span>R1</span>
+<b>→</b>
+<span>R3</span>
+<b>→</b>
+<span>R4</span>
+<b>→</b>
+<span>Destination</span>
+</div>
+
+<div class="route-stats">
+<div><small>Capacity</small><strong>8 Mbps</strong></div>
+<div><small>Delay</small><strong>5 ms</strong></div>
+<div><small>Role</small><strong>Backup</strong></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+<h2>ML Prediction Engine</h2>
+
+<div class="ml-engine">
+
+<div class="ml-input-box">
+<div class="engine-label">INPUT</div>
+<h3>Early Network Metrics</h3>
+<div class="metric-list">
+<span>Traffic Rate <b id="mlTrafficRate">5 Mbps</b></span>
+<span>Queue Size <b id="mlQueue">100 packets</b></span>
+<span>Packet Loss <b id="mlLoss">358 packets</b></span>
+<span>Delay <b id="mlDelay">1.108 s</b></span>
+<span>Throughput <b id="mlThroughput">1.985 Mbps</b></span>
+</div>
+</div>
+
+<div class="engine-arrow">→</div>
+
+<div class="model-box">
+<div class="engine-icon">🧠</div>
+<div class="engine-label">MODEL</div>
+<h3>Random Forest</h3>
+<p>Early Congestion Classifier</p>
+<div class="model-status">MODEL READY</div>
+</div>
+
+<div class="engine-arrow">→</div>
+
+<div class="prediction-box">
+<div class="engine-label">PREDICTION</div>
+<div class="prediction-state" id="mlPrediction">CONGESTION</div>
+<p>Detected at <b id="mlPredictionTime">6 seconds</b></p>
+<div class="confidence-bar">
+<span style="width:87.5%"></span>
+</div>
+<div class="confidence-text">
+<span>Validation Accuracy</span>
+<b>87.5%</b>
+</div>
+</div>
+
+<div class="engine-arrow">→</div>
+
+<div class="action-box">
+<div class="engine-label">ACTION</div>
+<div class="action-icon">↗</div>
+<h3 id="mlAction">Reroute to Path B</h3>
+<p>Switch traffic before severe congestion</p>
+<div class="action-status">PROACTIVE ACTION</div>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+<h2>Rerouting Performance Impact</h2>
+
+<div class="comparison-grid">
+
+<div class="comparison-card">
+<div class="comparison-title">
+<span>Throughput</span>
+<span class="gain-badge">+126.46%</span>
+</div>
+<div class="compare-values">
+<div>
+<small>BEFORE</small>
+<strong>2.00 Mbps</strong>
+</div>
+<div class="compare-arrow">→</div>
+<div class="after-value">
+<small>AFTER</small>
+<strong>4.52 Mbps</strong>
+</div>
+</div>
+<div class="compare-bar">
+<span style="width:90%"></span>
+</div>
+<p>5 Mbps traffic</p>
+</div>
+
+<div class="comparison-card">
+<div class="comparison-title">
+<span>Average Delay</span>
+<span class="gain-badge reduction">−80.10%</span>
+</div>
+<div class="compare-values">
+<div>
+<small>BEFORE</small>
+<strong>2.01 s</strong>
+</div>
+<div class="compare-arrow">→</div>
+<div class="after-value">
+<small>AFTER</small>
+<strong>0.40 s</strong>
+</div>
+</div>
+<div class="compare-bar delay-bar">
+<span style="width:80%"></span>
+</div>
+<p>5 Mbps traffic</p>
+</div>
+
+<div class="comparison-card">
+<div class="comparison-title">
+<span>Packet Loss</span>
+<span class="gain-badge reduction">−78.48%</span>
+</div>
+<div class="compare-values">
+<div>
+<small>BEFORE</small>
+<strong>4090</strong>
+</div>
+<div class="compare-arrow">→</div>
+<div class="after-value">
+<small>AFTER</small>
+<strong>880</strong>
+</div>
+</div>
+<div class="compare-bar loss-bar">
+<span style="width:78%"></span>
+</div>
+<p>5 Mbps traffic</p>
+</div>
+
+<div class="comparison-card highlight-comparison">
+<div class="comparison-title">
+<span>High Load Response</span>
+<span class="gain-badge">+241.89%</span>
+</div>
+<div class="compare-values">
+<div>
+<small>8 Mbps BEFORE</small>
+<strong>2.00 Mbps</strong>
+</div>
+<div class="compare-arrow">→</div>
+<div class="after-value">
+<small>8 Mbps AFTER</small>
+<strong>6.83 Mbps</strong>
+</div>
+</div>
+<div class="compare-bar">
+<span style="width:96%"></span>
+</div>
+<p>Peak throughput improvement</p>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+<h2>Live System Event Log</h2>
+
+<div class="event-log" id="eventLog">
+<div class="event-row">
+<div class="event-time">SYSTEM</div>
+<div class="event-dot"></div>
+<div class="event-message">
+<b>System initialized</b>
+<span>Dashboard ready for NS-3 simulation</span>
+</div>
+<div class="event-tag info">READY</div>
+</div>
+</div>
+
+</div>
+
+<div class="panel simulation-status-panel">
+<h2>Simulation Execution Status</h2>
+
+<div class="execution-status">
+<div class="execution-step active" id="statusReady">
+<div class="execution-icon">✓</div>
+<span>READY</span>
+<small>System Ready</small>
+</div>
+
+<div class="execution-connector"></div>
+
+<div class="execution-step" id="statusNS3">
+<div class="execution-icon">⚙</div>
+<span>NS-3</span>
+<small>Simulation</small>
+</div>
+
+<div class="execution-connector"></div>
+
+<div class="execution-step" id="statusML">
+<div class="execution-icon">🧠</div>
+<span>ML</span>
+<small>Prediction</small>
+</div>
+
+<div class="execution-connector"></div>
+
+<div class="execution-step" id="statusRoute">
+<div class="execution-icon">↗</div>
+<span>ROUTING</span>
+<small>Decision</small>
+</div>
+
+<div class="execution-connector"></div>
+
+<div class="execution-step" id="statusComplete">
+<div class="execution-icon">✓</div>
+<span>COMPLETE</span>
+<small>Results Ready</small>
+</div>
+</div>
+
+<div id="simulationStatusText" class="simulation-status-text">
+System ready for simulation
+</div>
+</div>
+
+<div class="panel" style="margin:0 35px 25px"><h2>NS-3 Multi-Path Network Topology</h2><img src="ns3_topology_visual.png" style="width:100%;max-height:430px;object-fit:contain"></div><div class="panel" style="margin:0 35px 25px"><h2>ML-Based Early Congestion Decision Flow</h2><div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:25px 10px"><div style="background:#e8f1ff;border:2px solid #173b6c;border-radius:12px;padding:16px;text-align:center"><b>Traffic Generation</b><br>NS-3<br><small>1–8 Mbps</small></div><b>→</b><div style="background:#eef7ee;border:2px solid #3d7a3d;border-radius:12px;padding:16px;text-align:center"><b>Network Monitoring</b><br>Packets • Delay<br>Queue • Throughput</div><b>→</b><div style="background:#fff5df;border:2px solid #a66a00;border-radius:12px;padding:16px;text-align:center"><b>Early Snapshot</b><br>@ 6 seconds<br><small>9 features</small></div><b>→</b><div style="background:#f0e8ff;border:2px solid #65419a;border-radius:12px;padding:16px;text-align:center"><b>Random Forest</b><br>ML Prediction</div><b>→</b><div style="background:#ffeaea;border:2px solid #a33;border-radius:12px;padding:16px;text-align:center"><b>Congestion?</b><br>YES / NO</div></div><div style="display:flex;justify-content:center;gap:25px;flex-wrap:wrap;padding-bottom:20px"><div style="background:#eef7ee;border-radius:10px;padding:15px 30px;text-align:center"><b>NO</b><br>Keep Current Path A</div><div style="font-size:25px;padding-top:10px">↔</div><div style="background:#e8f1ff;border-radius:10px;padding:15px 30px;text-align:center"><b>YES</b><br>Reroute → Path B</div></div><div style="text-align:center;background:#f4f4f4;border-radius:10px;padding:12px"><b>Final Performance Evaluation</b><br>Throughput • Delay • Packet Loss • Jitter</div></div>
+<div class="panel" style="margin:0 35px 25px">
+<h2>Interactive Network Simulation</h2>
+
+<div style="display:flex;gap:15px;align-items:end;flex-wrap:wrap">
+<div>
+<label><b>Traffic Rate (Mbps)</b></label><br>
+<input id="trafficRate" type="number" min="1" max="8" step="0.5" value="5" style="padding:10px;width:130px">
+</div>
+
+<button id="simulateBtn" style="padding:11px 20px;border:0;border-radius:8px;background:#173b6c;color:white;font-weight:bold;cursor:pointer">
+Update Dashboard
+</button>
+</div>
+
+<div id="liveStatus" style="margin-top:18px;padding:15px;background:#f4f7fb;border-radius:8px">
+Current simulation: <b>5 Mbps</b> | ML check: <b>6 seconds</b> | Decision: <b>CONGESTION → REROUTE</b>
+</div>
+</div>
+
+<script>
+function drawFeatureSnapshot(data) {
+
+    const canvas = document.getElementById("featureSnapshotChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const features = [
+        ["Traffic Rate", data.trafficRate],
+        ["Packets Sent", data.packetsSent],
+        ["Packets Received", data.packetsReceived],
+        ["Packets Lost", data.packetsLost],
+        ["Delay", data.delay],
+        ["Jitter", data.jitter],
+        ["Throughput", data.throughput],
+        ["Queue", data.queue],
+        ["Utilization", Math.min(data.trafficRate / 2, 1) * 100]
+    ];
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    const left = 210;
+    const right = 45;
+    const top = 35;
+    const bottom = 25;
+    const chartWidth = width - left - right;
+    const rowHeight = 40;
+
+    const maxValues = features.map(x => x[1]);
+    const maxValue = Math.max(...maxValues, 1);
+
+    features.forEach((item, i) => {
+
+        const label = item[0];
+        const value = item[1];
+
+        const y = top + i * rowHeight;
+
+        ctx.fillStyle = "#294f70";
+        ctx.font = "bold 13px Segoe UI, Arial";
+        ctx.textAlign = "right";
+        ctx.fillText(label, left - 15, y + 18);
+
+        ctx.fillStyle = "#edf4fb";
+        ctx.fillRect(left, y + 3, chartWidth, 22);
+
+        const barWidth = (value / maxValue) * chartWidth;
+
+        const gradient = ctx.createLinearGradient(
+            left, 0,
+            left + chartWidth, 0
+        );
+
+        gradient.addColorStop(0, "#1976d2");
+        gradient.addColorStop(1, "#9bc9ef");
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(left, y + 3, barWidth, 22);
+
+        ctx.fillStyle = "#123e70";
+        ctx.font = "bold 11px Segoe UI, Arial";
+        ctx.textAlign = "left";
+
+        let displayValue;
+
+        if (label === "Delay" || label === "Jitter") {
+            displayValue = value.toFixed(4);
+        } else {
+            displayValue = value.toFixed(2);
+        }
+
+        ctx.fillText(
+            displayValue,
+            left + barWidth + 8,
+            y + 19
+        );
+    });
+
+    const badge = document.getElementById("featureSnapshotRate");
+
+    if (badge) {
+        badge.textContent =
+            "LIVE • " +
+            data.trafficRate.toFixed(1) +
+            " Mbps • 6s SNAPSHOT";
+    }
+}
+
+function setExecutionStatus(step, message) {
+    const steps = [
+        "statusReady",
+        "statusNS3",
+        "statusML",
+        "statusRoute",
+        "statusComplete"
+    ];
+
+    const index = steps.indexOf(step);
+
+    steps.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        el.classList.remove("active", "done");
+
+        if (i < index) {
+            el.classList.add("done");
+        } else if (i === index) {
+            el.classList.add("active");
+        }
+    });
+
+    const statusText = document.getElementById("simulationStatusText");
+
+    if (statusText) {
+        statusText.textContent = message;
+    }
+}
+
+(function() {
+const b = document.getElementById("simulateBtn");
+const r = document.getElementById("trafficRate");
+const s = document.getElementById("liveStatus");
+
+b.addEventListener("click", async function() {
+
+    const rate = parseFloat(r.value);
+
+    if (!Number.isFinite(rate) || rate < 1 || rate > 8) {
+        s.innerHTML = "<b>Please enter a traffic rate between 1 and 8 Mbps.</b>";
+        return;
+    }
+
+    b.disabled = true;
+    b.innerText = "Running NS-3...";
+    
+    if (typeof setExecutionStatus === "function") {
+        setExecutionStatus(
+            "statusNS3",
+            "Running NS-3 network simulation at " +
+            rate.toFixed(1) + " Mbps..."
+        );
+    }
+
+    if (typeof addEventLog === "function") {
+        addEventLog(
+            "NS-3 simulation started at " + rate.toFixed(1) + " Mbps",
+            "NS-3",
+            "info"
+        );
+    }
+
+    s.innerHTML = "⏳ Running actual NS-3 simulation at <b>" +
+                  rate.toFixed(1) + " Mbps</b>... Please wait.";
+
+    /* Progress through the stages while NS-3 is actually running */
+    const stageTimers = [];
+
+    stageTimers.push(setTimeout(() => {
+        if (typeof setExecutionStatus === "function") {
+            setExecutionStatus(
+                "statusML",
+                "Random Forest evaluating early network metrics..."
+            );
+        }
+    }, 1000));
+
+    stageTimers.push(setTimeout(() => {
+        if (typeof setExecutionStatus === "function") {
+            setExecutionStatus(
+                "statusRoute",
+                "Waiting for ML routing decision..."
+            );
+        }
+    }, 2200));
+
+    try {
+
+        const response = await fetch(
+            "/run?rate=" + encodeURIComponent(rate)
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+            if (typeof setExecutionStatus === "function") {
+                setExecutionStatus(
+                    "statusComplete",
+                    "Simulation failed — check NS-3 output."
+                );
+            }
+        } else {
+
+            if (typeof addEventLog === "function") {
+                addEventLog(
+                    "Random Forest prediction: " + data.decision,
+                    data.decision,
+                    data.decision === "CONGESTION" ? "warning" : "success"
+                );
+            }
+
+            if (typeof setExecutionStatus === "function") {
+
+                if (data.decision === "CONGESTION") {
+
+                    setExecutionStatus(
+                        "statusRoute",
+                        "Congestion detected — Path A → Path B rerouting."
+                    );
+
+                    if (typeof addEventLog === "function") {
+                        addEventLog(
+                            "Congestion detected — proactive rerouting triggered",
+                            "REROUTE",
+                            "danger"
+                        );
+                    }
+
+                } else {
+
+                    setExecutionStatus(
+                        "statusRoute",
+                        "No congestion detected — Path A retained."
+                    );
+
+                    if (typeof addEventLog === "function") {
+                        addEventLog(
+                            "No congestion detected — Path A retained",
+                            "KEEP PATH",
+                            "success"
+                        );
+                    }
+                }
+
+                /* COMPLETE only after the actual result arrives */
+                setTimeout(() => {
+                    setExecutionStatus(
+                        "statusComplete",
+                        "Simulation completed — results updated."
+                    );
+
+                    if (typeof addEventLog === "function") {
+                        addEventLog(
+                            "Simulation completed — dashboard updated",
+                            "COMPLETE",
+                            "success"
+                        );
+                    }
+                }, 500);
+            }
+        }
+
+        if (!data.success) {
+            throw new Error(data.error || "NS-3 simulation failed");
+        }
+
+        s.innerHTML =
+            "Simulation: <b>" + data.trafficRate.toFixed(1) +
+            " Mbps</b> | Throughput: <b>" +
+            data.throughput.toFixed(3) +
+            " Mbps</b> | Delay: <b>" +
+            data.delay.toFixed(3) +
+            " s</b> | ML: <b>" +
+            data.decision +
+            "</b> | Action: <b>" +
+            data.action +
+            "</b>";
+
+        
+console.log("Actual NS-3 results:", data);
+
+/* Update live network feature snapshot */
+if (typeof drawFeatureSnapshot === "function") {
+    drawFeatureSnapshot(data);
+}
+
+const row = document.createElement("tr");
+
+row.innerHTML = `
+    <td style="padding:8px;border:1px solid #ddd">${data.trafficRate.toFixed(1)}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.throughput.toFixed(3)}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.delay.toFixed(3)}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.packetsLost}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.jitter.toFixed(5)}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.decision}</td>
+    <td style="padding:8px;border:1px solid #ddd">${data.action}</td>
+`;
+
+document.getElementById("historyBody").appendChild(row);
+
+
+
+if (window.addThroughputResult) {
+    window.addThroughputResult(
+        data.trafficRate,
+        data.throughput
+    );
+}
+
+if (window.addDelayResult) {
+    window.addDelayResult(
+        data.trafficRate,
+        data.delay
+    );
+}
+
+if (window.addPacketLossResult) {
+    window.addPacketLossResult(
+        data.trafficRate,
+        data.packetsLost
+    );
+}
+
+if (window.addJitterResult) {
+    window.addJitterResult(
+        data.trafficRate,
+        data.jitter
+    );
+}
+
+/* Update live ML Prediction Engine */
+const mlTraffic = document.getElementById("mlTrafficRate");
+const mlQueue = document.getElementById("mlQueue");
+const mlLoss = document.getElementById("mlLoss");
+const mlDelay = document.getElementById("mlDelay");
+const mlThroughput = document.getElementById("mlThroughput");
+const mlPrediction = document.getElementById("mlPrediction");
+const mlPredictionTime = document.getElementById("mlPredictionTime");
+const mlAction = document.getElementById("mlAction");
+
+if (mlTraffic) {
+    mlTraffic.textContent = data.trafficRate.toFixed(1) + " Mbps";
+}
+
+if (mlQueue) {
+    mlQueue.textContent = Math.round(data.queue) + " packets";
+}
+
+if (mlLoss) {
+    mlLoss.textContent = Math.round(data.packetsLost) + " packets";
+}
+
+if (mlDelay) {
+    mlDelay.textContent = data.delay.toFixed(3) + " s";
+}
+
+if (mlThroughput) {
+    mlThroughput.textContent = data.throughput.toFixed(3) + " Mbps";
+}
+
+if (mlPrediction) {
+    mlPrediction.textContent = data.decision;
+}
+
+if (mlPredictionTime) {
+    mlPredictionTime.textContent = "6 seconds";
+}
+
+if (mlAction) {
+    mlAction.textContent = data.action;
+}
+
+
+    } catch (error) {
+
+        s.innerHTML =
+            "<b>Simulation Error:</b> " + error.message;
+
+    } finally {
+
+        b.disabled = false;
+        b.innerText = "Run NS-3 Simulation";
+
+    }
+
+});
+})();
+</script>
+<div class="grid">
+
+<div class="panel full">
+<h2>Throughput — Before vs After Proactive Rerouting</h2>
+
+<div style="padding:10px 0">
+<h3>Live Throughput vs Traffic Rate</h3>
+
+<canvas id="throughputChart"
+        width="900"
+        height="320"
+        style="width:100%;max-width:900px;border:1px solid #ddd;border-radius:8px">
+</canvas>
+
+</div>
+
+</div>
+
+<div class="panel">
+<h2>Delay — Before vs After</h2>
+
+<div style="padding:10px 0">
+<h3>Live Delay vs Traffic Rate</h3>
+<canvas id="delayChart"
+        width="900"
+        height="320"
+        style="width:100%;max-width:900px;border:1px solid #ddd;border-radius:8px">
+</canvas><canvas id="jitterChart" width="600" height="300"></canvas><div id="simulationHistory" style="margin-top:25px">
+<h2 style="margin-bottom:12px">Live Simulation History</h2>
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;text-align:center">
+<thead>
+<tr>
+<th style="padding:10px;border:1px solid #ddd">Rate (Mbps)</th>
+<th style="padding:10px;border:1px solid #ddd">Throughput (Mbps)</th>
+<th style="padding:10px;border:1px solid #ddd">Delay (s)</th>
+<th style="padding:10px;border:1px solid #ddd">Packet Loss</th>
+<th style="padding:10px;border:1px solid #ddd">Jitter (s)</th>
+<th style="padding:10px;border:1px solid #ddd">ML Decision</th>
+<th style="padding:10px;border:1px solid #ddd">Action</th>
+</tr>
+</thead>
+<tbody id="historyBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="panel">
+<h2>Packet Loss — Before vs After</h2>
+<canvas id="packetLossChart" width="600" height="300"></canvas>
+</div>
+
+<div class="panel">
+<h2>Random Forest Feature Importance</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap">
+<div>
+<h2 style="margin-bottom:4px">Live Early Network Feature Snapshot</h2>
+<p style="margin:0;color:#7b899b;font-size:11px">
+Actual network measurements captured at the 6-second ML prediction point
+</p>
+</div>
+<div id="featureSnapshotRate"
+style="padding:7px 12px;border-radius:20px;background:#eaf4ff;color:#1768a8;font-size:10px;font-weight:800">
+WAITING FOR SIMULATION
+</div>
+</div>
+
+<div style="margin-top:18px">
+<canvas id="featureSnapshotChart" width="820" height="360"
+style="width:100%;max-width:900px;height:360px;display:block;margin:0 auto"></canvas>
+</div>
+</div>
+
+<div class="panel">
+<h2>ML Confusion Matrix — LOOCV</h2>
+<img src="confusion_matrix_dashboard.png">
+</div>
+
+</div>
+
+<div class="footer">
+NS-3.48 | Random Forest | Early Prediction at 6 seconds | Path A → Path B Proactive Rerouting
+</div>
+
+
+<script>
+(function() {
+
+let throughputData = [];
+
+function drawThroughputChart() {
+
+    const canvas = document.getElementById("throughputChart");
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const left = 70;
+    const right = 30;
+    const top = 30;
+    const bottom = 55;
+
+    const width = canvas.width - left - right;
+    const height = canvas.height - top - bottom;
+
+    ctx.strokeStyle = "#333333";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + height);
+    ctx.lineTo(left + width, top + height);
+    ctx.stroke();
+
+    if (throughputData.length === 0) {
+
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#666";
+        ctx.fillText(
+            "Run an NS-3 simulation to add data",
+            left + 180,
+            top + height / 2
+        );
+
+        return;
+    }
+
+    const maxY = Math.max(
+        2,
+        ...throughputData.map(x => x.throughput)
+    ) * 1.2;
+
+    // Y-axis labels
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#444";
+
+    for (let i = 0; i <= 4; i++) {
+
+        const value = maxY * i / 4;
+        const y = top + height - (value / maxY) * height;
+
+        ctx.fillText(
+            value.toFixed(1),
+            20,
+            y + 4
+        );
+
+        ctx.strokeStyle = "#eeeeee";
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + width, y);
+        ctx.stroke();
+    }
+
+    // Plot line
+    if (throughputData.length > 1) {
+
+        ctx.strokeStyle = "#173b6c";
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+
+        throughputData.forEach((point, i) => {
+
+            const x = left +
+                ((point.rate - 1) / 7) * width;
+
+            const y = top + height -
+                (point.throughput / maxY) * height;
+
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    // Points and labels
+    throughputData.forEach(point => {
+
+        const x = left +
+            ((point.rate - 1) / 7) * width;
+
+        const y = top + height -
+            (point.throughput / maxY) * height;
+
+        ctx.fillStyle = "#173b6c";
+
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = "11px Arial";
+        ctx.fillStyle = "#333";
+
+        ctx.fillText(
+            point.throughput.toFixed(2),
+            x - 15,
+            y - 10
+        );
+
+        ctx.fillText(
+            point.rate + " Mbps",
+            x - 20,
+            top + height + 22
+        );
+    });
+
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#222";
+
+    ctx.fillText(
+        "Traffic Rate (Mbps)",
+        left + width / 2 - 55,
+        canvas.height - 10
+    );
+
+    ctx.save();
+
+    ctx.translate(15, top + height / 2 + 40);
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.fillText(
+        "Throughput (Mbps)",
+        0,
+        0
+    );
+
+    ctx.restore();
+}
+
+let packetLossData = [];
+
+function drawPacketLossChart() {
+    const canvas = document.getElementById("packetLossChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const left = 70, right = 30, top = 30, bottom = 55;
+    const width = canvas.width - left - right;
+    const height = canvas.height - top - bottom;
+
+    ctx.strokeStyle = "#333333";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + height);
+    ctx.lineTo(left + width, top + height);
+    ctx.stroke();
+
+    if (packetLossData.length === 0) {
+        ctx.font = "16px Arial";
+        ctx.fillText("Run an NS-3 simulation to display packet loss", 120, 150);
+        return;
+    }
+
+    const maxLoss = Math.max(...packetLossData.map(x => x.lost), 1);
+    const minRate = Math.min(...packetLossData.map(x => x.rate));
+    const maxRate = Math.max(...packetLossData.map(x => x.rate), minRate + 1);
+
+    ctx.beginPath();
+
+    packetLossData.forEach((point, i) => {
+        const x = left + ((point.rate - minRate) / (maxRate - minRate)) * width;
+        const y = top + height - (point.lost / maxLoss) * height;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+
+    packetLossData.forEach(point => {
+        const x = left + ((point.rate - minRate) / (maxRate - minRate)) * width;
+        const y = top + height - (point.lost / maxLoss) * height;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.font = "13px Arial";
+    ctx.fillText("Traffic Rate (Mbps)", left + width / 2 - 55, canvas.height - 15);
+
+    ctx.save();
+    ctx.translate(18, top + height / 2 + 45);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Packets Lost", 0, 0);
+    ctx.restore();
+}
+
+window.addPacketLossResult = function(rate, lost) {
+
+    packetLossData = packetLossData.filter(
+        x => x.rate !== rate
+    );
+
+    packetLossData.push({
+        rate: rate,
+        lost: lost
+    });
+
+    packetLossData.sort(
+        (a, b) => a.rate - b.rate
+    );
+
+    drawPacketLossChart();
+};
+
+window.addThroughputResult = function(rate, throughput) {
+
+    throughputData = throughputData.filter(
+        x => x.rate !== rate
+    );
+
+    throughputData.push({
+        rate: rate,
+        throughput: throughput
+    });
+
+    throughputData.sort(
+        (a, b) => a.rate - b.rate
+    );
+
+    drawThroughputChart();
+};
+
+drawThroughputChart();
+
+})();
+</script>
+
+
+<script>
+(function() {
+
+let delayData = [];
+
+function drawDelayChart() {
+
+    const canvas = document.getElementById("delayChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const left = 70;
+    const right = 30;
+    const top = 30;
+    const bottom = 55;
+
+    const width = canvas.width - left - right;
+    const height = canvas.height - top - bottom;
+
+    ctx.strokeStyle = "#333333";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + height);
+    ctx.lineTo(left + width, top + height);
+    ctx.stroke();
+
+    if (delayData.length === 0) {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#666";
+        ctx.fillText(
+            "Run an NS-3 simulation to add data",
+            left + 180,
+            top + height / 2
+        );
+        return;
+    }
+
+    const maxY = Math.max(
+        0.1,
+        ...delayData.map(x => x.delay)
+    ) * 1.2;
+
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#444";
+
+    for (let i = 0; i <= 4; i++) {
+
+        const value = maxY * i / 4;
+        const y = top + height - (value / maxY) * height;
+
+        ctx.fillText(
+            value.toFixed(2),
+            20,
+            y + 4
+        );
+
+        ctx.strokeStyle = "#eeeeee";
+
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + width, y);
+        ctx.stroke();
+    }
+
+    if (delayData.length > 1) {
+
+        ctx.strokeStyle = "#a33";
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+
+        delayData.forEach((point, i) => {
+
+            const x =
+                left + ((point.rate - 1) / 7) * width;
+
+            const y =
+                top + height -
+                (point.delay / maxY) * height;
+
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    delayData.forEach(point => {
+
+        const x =
+            left + ((point.rate - 1) / 7) * width;
+
+        const y =
+            top + height -
+            (point.delay / maxY) * height;
+
+        ctx.fillStyle = "#a33";
+
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = "11px Arial";
+        ctx.fillStyle = "#333";
+
+        ctx.fillText(
+            point.delay.toFixed(3),
+            x - 15,
+            y - 10
+        );
+
+        ctx.fillText(
+            point.rate + " Mbps",
+            x - 20,
+            top + height + 22
+        );
+    });
+
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#222";
+
+    ctx.fillText(
+        "Traffic Rate (Mbps)",
+        left + width / 2 - 55,
+        canvas.height - 10
+    );
+
+    ctx.save();
+
+    ctx.translate(15, top + height / 2 + 35);
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.fillText(
+        "Delay (seconds)",
+        0,
+        0
+    );
+
+    ctx.restore();
+}
+
+let jitterData = [];
+
+function drawJitterChart() {
+    const canvas = document.getElementById("jitterChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const left = 70, right = 30, top = 30, bottom = 55;
+    const width = canvas.width - left - right;
+    const height = canvas.height - top - bottom;
+
+    ctx.strokeStyle = "#333333";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + height);
+    ctx.lineTo(left + width, top + height);
+    ctx.stroke();
+
+    if (jitterData.length === 0) {
+        ctx.font = "16px Arial";
+        ctx.fillText("Run an NS-3 simulation to display jitter", 130, 150);
+        return;
+    }
+
+    const maxJitter = Math.max(...jitterData.map(x => x.jitter), 0.001);
+    const minRate = Math.min(...jitterData.map(x => x.rate));
+    const maxRate = Math.max(...jitterData.map(x => x.rate), minRate + 1);
+
+    ctx.beginPath();
+
+    jitterData.forEach((point, i) => {
+        const x = left + ((point.rate - minRate) / (maxRate - minRate)) * width;
+        const y = top + height - (point.jitter / maxJitter) * height;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+
+    jitterData.forEach(point => {
+        const x = left + ((point.rate - minRate) / (maxRate - minRate)) * width;
+        const y = top + height - (point.jitter / maxJitter) * height;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // X-axis tick labels for traffic rates
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#333333";
+    ctx.textAlign = "center";
+
+    jitterData.forEach(point => {
+        const x = left + ((point.rate - minRate) / (maxRate - minRate)) * width;
+        ctx.fillText(point.rate + " Mbps", x, top + height + 22);
+    });
+
+    ctx.fillText("Traffic Rate (Mbps)", left + width / 2, canvas.height - 15);
+
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.translate(18, top + height / 2 + 35);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Jitter (seconds)", 0, 0);
+    ctx.restore();
+}
+
+window.addJitterResult = function(rate, jitter) {
+
+    jitterData = jitterData.filter(
+        x => x.rate !== rate
+    );
+
+    jitterData.push({
+        rate: rate,
+        jitter: jitter
+    });
+
+    jitterData.sort(
+        (a, b) => a.rate - b.rate
+    );
+
+    drawJitterChart();
+};
+
+drawJitterChart();
+
+window.addDelayResult = function(rate, delay) {
+
+    delayData = delayData.filter(
+        x => x.rate !== rate
+    );
+
+    delayData.push({
+        rate: rate,
+        delay: delay
+    });
+
+    delayData.sort(
+        (a, b) => a.rate - b.rate
+    );
+
+    drawDelayChart();
+};
+
+drawDelayChart();
+
+})();
+</script>
+
+</body>
+</html>
